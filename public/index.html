@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>OperationBrowser</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="example.css" />
+
+    <script src="/uv/uv.bundle.js"></script>
+    <script src="/uv/uv.config.js"></script>
+    <script src="/baremux/index.js"></script>
+    <script>
+      (function () {
+        try {
+          const params = new URLSearchParams(location.search || "");
+          if (params.get("embed") === "1") document.documentElement.classList.add("embed");
+        } catch {}
+      })();
+    </script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("/uv/sw.js").catch(() => {});
+        });
+      }
+    </script>
+  </head>
+  <body>
+    <!-- Main Content -->
+    <div id="content">
+      <div id="frame-wrap">
+        <div id="load-bar"></div>
+
+        <iframe
+          id="frame"
+          sandbox="allow-forms allow-modals allow-pointer-lock allow-same-origin allow-scripts allow-downloads"
+          referrerpolicy="no-referrer"
+          allow="encrypted-media; geolocation; microphone; camera; autoplay; fullscreen"
+        ></iframe>
+
+        <!-- New Tab Page -->
+        <div id="newtab">
+          <div class="nt-header">
+            <div class="nt-brand">Aether<span>Net</span></div>
+            <button class="nt-menu-btn" id="nt-menu">⋮</button>
+          </div>
+          <div class="nt-search-wrap">
+            <div class="nt-sb">
+              <span class="nt-sb-icon">🔍</span>
+              <input id="nt-inp" placeholder="Rechercher sur le web…" spellcheck="false" />
+            </div>
+          </div>
+          <div class="nt-favorites">
+            <div class="nt-sec-title">
+              <span>Favoris</span>
+              <button class="nt-add-btn" id="nt-add-fav">+</button>
+            </div>
+            <div class="nt-fav-grid" id="nt-fav-grid"></div>
+          </div>
+          <div class="nt-grid" id="nt-grid"></div>
+          <div class="nt-recent">
+            <div class="nt-sec-title">Visites récentes</div>
+            <div class="nt-card" id="nt-hist"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Side Panel (full screen on mobile) -->
+      <div id="panel">
+        <div class="panel-header">
+          <div class="panel-tabs">
+            <div class="ptab on" data-p="history">Historique</div>
+            <div class="ptab" data-p="bookmarks">Favoris</div>
+            <div class="ptab" data-p="downloads">Téléch.</div>
+            <div class="ptab" data-p="settings">Réglages</div>
+          </div>
+          <div class="pcl" id="panel-close">×</div>
+        </div>
+        <div id="panel-body"></div>
+      </div>
+    </div>
+
+    <!-- Bottom Navigation Bar (Mobile Style) -->
+    <div id="bottom-bar">
+      <button class="bb-btn off" id="btn-back">
+        <span class="bb-icon">←</span>
+        <span class="bb-label">Retour</span>
+      </button>
+      <button class="bb-btn off" id="btn-fwd">
+        <span class="bb-icon">→</span>
+        <span class="bb-label">Suivant</span>
+      </button>
+      <button class="bb-btn" id="btn-home">
+        <span class="bb-icon">⌂</span>
+        <span class="bb-label">Accueil</span>
+      </button>
+      <button class="bb-btn" id="btn-tabs">
+        <span class="bb-icon" id="tabs-count">1</span>
+        <span class="bb-label">Onglets</span>
+      </button>
+      <button class="bb-btn" id="btn-menu">
+        <span class="bb-icon">⋮</span>
+        <span class="bb-label">Menu</span>
+      </button>
+    </div>
+
+    <!-- Address Bar (Floating Bottom) -->
+    <div id="addr-bar">
+      <div id="addr-wrap">
+        <div id="addr-lock">🔒</div>
+        <input id="address" type="text" placeholder="Rechercher ou entrer une URL…" autocomplete="off" spellcheck="false" />
+        <button class="ab" id="btn-bm">☆</button>
+        <div id="suggestions"></div>
+      </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div id="status-bar">
+      <div class="st-dot g" id="st-dot"></div>
+      <span id="st-text">Prêt</span>
+      <span class="st-tag st-tag-g" id="st-proxy" style="display: none">Proxy</span>
+    </div>
+
+    <!-- Tabs Overlay -->
+    <div id="tabs-overlay">
+      <div class="tabs-sheet">
+        <div class="tabs-header">
+          <span>Onglets</span>
+          <button class="tabs-close" id="tabs-close">×</button>
+        </div>
+        <div class="tabs-grid" id="tabs-grid"></div>
+        <div class="tabs-actions">
+          <button class="tabs-btn-new" id="tabs-btn-new">+ Nouvel onglet</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Menu Overlay -->
+    <div id="menu-overlay">
+      <div class="menu-sheet">
+        <div class="menu-header">
+          <span>Menu</span>
+          <button class="menu-close" id="menu-close">×</button>
+        </div>
+        <div class="menu-items">
+          <div class="menu-item" id="menu-reload">
+            <span class="menu-icon">↻</span>
+            <span class="menu-text">Recharger la page</span>
+          </div>
+          <div class="menu-item" id="menu-download">
+            <span class="menu-icon">⬇</span>
+            <span class="menu-text">Télécharger la page</span>
+          </div>
+          <div class="menu-item" id="menu-bookmarks">
+            <span class="menu-icon">★</span>
+            <span class="menu-text">Gérer les favoris</span>
+          </div>
+          <div class="menu-item" id="menu-history">
+            <span class="menu-icon">🕐</span>
+            <span class="menu-text">Historique</span>
+          </div>
+          <div class="menu-divider"></div>
+          <div class="menu-item" id="menu-settings">
+            <span class="menu-icon">⚙️</span>
+            <span class="menu-text">Paramètres</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="example.js"></script>
+  </body>
+</html>
