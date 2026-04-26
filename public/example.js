@@ -327,14 +327,21 @@ async function loadFrameUrl(url, mode) {
   els.frame.style.display = "block";
   setStatus("Chargement…", "y", true);
   setLoadBar(15);
-  if (!window.__uv$config) {
+  // Fallback: pas de proxy UV ou pas de SharedWorker = chargement direct
+  if (!window.__uv$config || !connection) {
     els.stProxy.style.display = "none";
     els.frame.src = url;
     return;
   }
-  await ensureTransport(mode);
-  els.stProxy.style.display = "";
-  els.frame.src = toProxiedUrl(url);
+  try {
+    await ensureTransport(mode);
+    els.stProxy.style.display = "";
+    els.frame.src = toProxiedUrl(url);
+  } catch (e) {
+    console.warn("Proxy failed, using direct:", e);
+    els.stProxy.style.display = "none";
+    els.frame.src = url;
+  }
 }
 
 async function selectTab(id) {
