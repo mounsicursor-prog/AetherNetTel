@@ -322,6 +322,48 @@ function showNewTab() {
   renderNewTab();
 }
 let loadTimeout = null;
+let iframeBlocked = false;
+
+// Détecte si l'iframe est bloquée
+function checkIframeBlocked(url) {
+  // Si pas de SharedWorker, l'iframe sera probablement bloquée
+  if (!connection) {
+    console.warn("No SharedWorker - iframe likely blocked for:", url);
+    iframeBlocked = true;
+    showIframeBlockedMessage(url);
+  }
+}
+
+function showIframeBlockedMessage(url) {
+  const domainStr = domain(url);
+  // Créer un overlay si pas déjà présent
+  let overlay = document.getElementById('iframe-blocked-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'iframe-blocked-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:999;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:24px;';
+    document.body.appendChild(overlay);
+  }
+  overlay.innerHTML = `
+    <div style="color:white;text-align:center;max-width:300px;">
+      <div style="font-size:48px;margin-bottom:16px;">🔒</div>
+      <div style="font-size:18px;font-weight:600;margin-bottom:8px;">${domainStr}</div>
+      <div style="font-size:14px;color:#aaa;margin-bottom:24px;">Ce site bloque l'affichage dans l'application</div>
+      <button id="open-external-btn" style="background:var(--accent);color:white;border:none;padding:12px 24px;border-radius:8px;font-size:16px;font-weight:500;cursor:pointer;width:100%;margin-bottom:12px;">Ouvrir dans navigateur</button>
+      <button id="close-overlay-btn" style="background:transparent;color:#aaa;border:1px solid #555;padding:12px 24px;border-radius:8px;font-size:14px;cursor:pointer;width:100%;">Retour</button>
+    </div>
+  `;
+  overlay.style.display = 'flex';
+  
+  document.getElementById('open-external-btn').onclick = () => {
+    window.open(url, '_blank');
+    overlay.style.display = 'none';
+  };
+  document.getElementById('close-overlay-btn').onclick = () => {
+    overlay.style.display = 'none';
+    showNewTab();
+  };
+}
 
 async function loadFrameUrl(url, mode) {
   if (!url || url === "about:newtab") return showNewTab();
@@ -332,17 +374,36 @@ async function loadFrameUrl(url, mode) {
   
   // Clear any existing timeout
   if (loadTimeout) clearTimeout(loadTimeout);
+  iframeBlocked = false;
+  
+  // Masquer l'overlay de blocage s'il existe
+  const overlay = document.getElementById('iframe-blocked-overlay');
+  if (overlay) overlay.style.display = 'none';
   
   // Set a timeout to detect slow/blocked loads
   loadTimeout = setTimeout(() => {
     setStatus("Chargement lent...", "y");
     console.warn("Page load timeout - possible iframe blocking");
-  }, 8000);
+    checkIframeBlocked(url);
+  }, 5000);
   
   // Fallback: pas de proxy UV ou pas de SharedWorker = chargement direct
   if (!window.__uv$config || !connection) {
     els.stProxy.style.display = "none";
     els.frame.src = url;
+    // Vérifier rapidement si chargé
+    setTimeout(() => {
+      try {
+        // Si on ne peut pas accéder à contentDocument, l'iframe est bloquée
+        const doc = els.frame.contentDocument || els.frame.contentWindow?.document;
+        if (!doc || doc.body?.innerHTML === '') {
+          checkIframeBlocked(url);
+        }
+      } catch (e) {
+        // Erreur = iframe cross-origin bloquée
+        checkIframeBlocked(url);
+      }
+    }, 3000);
     return;
   }
   try {
