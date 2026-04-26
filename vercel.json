@@ -1,0 +1,35 @@
+{
+  "version": 2,
+  "name": "operation-browser",
+  "builds": [
+    {
+      "src": "public/**",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/uv/(.*)",
+      "dest": "/uv/$1"
+    },
+    {
+      "src": "/baremux/(.*)",
+      "dest": "/baremux/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/uv/(.*)",
+      "headers": [
+        {
+          "key": "Service-Worker-Allowed",
+          "value": "/"
+        }
+      ]
+    }
+  ]
+}

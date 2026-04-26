@@ -46,6 +46,12 @@ const els = {
   tabsBtnNew: document.getElementById("tabs-btn-new"),
 };
 
+// Log des éléments manquants pour debug
+console.log("DOM Elements check:");
+Object.entries(els).forEach(([k, v]) => {
+  if (!v) console.warn(`Missing element: ${k}`);
+});
+
 const DEFAULTS = {
   activeTabId: null,
   tabs: [],
@@ -145,7 +151,8 @@ function loadState() {
   let saved = null;
   try {
     saved = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
-  } catch {
+  } catch (e) {
+    console.warn("localStorage non disponible:", e);
     saved = null;
   }
   state = {
@@ -831,14 +838,16 @@ window.addEventListener("message", async (event) => {
 });
 
 async function boot() {
-  loadState();
-  // Transport setting loaded from state
-  renderAll();
-  renderNewTab();
-  showNewTab();
-  setStatus("Prêt", "g");
-
   try {
+    console.log("Boot starting...");
+    loadState();
+    console.log("State loaded, tabs:", state.tabs.length);
+    renderAll();
+    renderNewTab();
+    showNewTab();
+    setStatus("Prêt", "g");
+    console.log("Boot complete");
+
     const params = new URLSearchParams(location.search || "");
     let initial = String(params.get("url") || "").trim();
     try {
@@ -846,8 +855,12 @@ async function boot() {
       if (/^https?:\/\//i.test(decoded) || /^about:/i.test(decoded)) initial = decoded;
     } catch {}
     if (initial) await navigate(initial);
-  } catch {}
+  } catch (e) {
+    console.error("Boot error:", e);
+    alert("Erreur de démarrage: " + e.message);
+  }
 }
 
-boot();
+// Attendre que le DOM soit prêt
+document.addEventListener("DOMContentLoaded", boot);
 ﻿
