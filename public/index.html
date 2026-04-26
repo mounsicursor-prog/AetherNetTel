@@ -50,7 +50,7 @@
       });
       window.addEventListener('unhandledrejection', function(e) {
         window.__errors.push({msg: e.reason, type: 'promise'});
-        alert('Promise Error: ' + e.reason);
+        console.warn('Promise rejected:', e.reason);
       });
     </script>
     <!-- Main Content -->
