@@ -5,7 +5,20 @@ const SEARCH_URL = "https://search.brave.com/search?q=%s";
 
 const wispUrl = (location.protocol === "https:" ? "wss" : "ws") + "://" + location.host + "/wisp/";
 const bareUrl = (location.protocol === "https:" ? "https" : "http") + "://" + location.host + "/bare/";
-const connection = new BareMux.BareMuxConnection("/baremux/worker.js");
+
+// Support iOS Safari qui n'a pas Shared Worker
+let connection;
+try {
+  if (typeof SharedWorker === 'undefined') {
+    console.warn('SharedWorker not supported, using fallback');
+    connection = null;
+  } else {
+    connection = new BareMux.BareMuxConnection("/baremux/worker.js");
+  }
+} catch (e) {
+  console.warn('BareMux error:', e);
+  connection = null;
+}
 
 const els = {
   frame: document.getElementById("frame"),
@@ -202,10 +215,12 @@ function pushGlobalHistory(url, title) {
 }
 
 async function setTransport(mode) {
+  if (!connection) return;
   if (mode === "bare") return connection.setTransport("/baremod/index.mjs", [bareUrl]);
   return connection.setTransport("/epoxy/index.mjs", [{ wisp: wispUrl }]);
 }
 async function ensureTransport(mode) {
+  if (!connection) return;
   if (await connection.getTransport()) return;
   await setTransport(mode);
 }
