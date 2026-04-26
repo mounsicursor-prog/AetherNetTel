@@ -13,6 +13,16 @@
 
     <script src="/uv/uv.bundle.js"></script>
     <script src="/uv/uv.config.js"></script>
+    <script>
+      // Polyfill pour iOS Safari qui n'a pas SharedWorker
+      if (typeof SharedWorker === 'undefined') {
+        window.SharedWorker = function(url, name) {
+          this.port = { postMessage: function() {}, onmessage: null };
+          this.onerror = null;
+        };
+        console.warn('SharedWorker polyfill loaded for iOS Safari');
+      }
+    </script>
     <script src="/baremux/index.js"></script>
     <script>
       (function () {
