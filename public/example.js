@@ -6,17 +6,17 @@ const SEARCH_URL = "https://search.brave.com/search?q=%s";
 const wispUrl = (location.protocol === "https:" ? "wss" : "ws") + "://" + location.host + "/wisp/";
 const bareUrl = (location.protocol === "https:" ? "https" : "http") + "://" + location.host + "/bare/";
 
-// Support iOS Safari qui n'a pas Shared Worker
-let connection;
+// Support navigateurs sans SharedWorker (WebView Android, iOS Safari)
+let connection = null;
 try {
-  if (typeof SharedWorker === 'undefined') {
-    console.warn('SharedWorker not supported, using fallback');
-    connection = null;
-  } else {
+  if (typeof SharedWorker !== 'undefined' && typeof BareMux !== 'undefined') {
     connection = new BareMux.BareMuxConnection("/baremux/worker.js");
+    console.log('BareMux loaded');
+  } else {
+    console.warn('SharedWorker or BareMux not available');
   }
 } catch (e) {
-  console.warn('BareMux error:', e);
+  console.warn('BareMux init error:', e);
   connection = null;
 }
 
