@@ -287,6 +287,41 @@ body {
 }
 
 /* ============================================
+   SERVER SELECTOR
+   ============================================ */
+#server-selector {
+  position: fixed;
+  bottom: calc(var(--bottom-h) + var(--safe-bottom) + 50px);
+  left: 10px;
+  right: 10px;
+  z-index: 45;
+  display: flex;
+  justify-content: center;
+}
+#server-select {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  color: var(--text);
+  padding: 8px 12px;
+  font-size: 13px;
+  font-family: var(--font);
+  outline: none;
+  cursor: pointer;
+  min-width: 160px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.3);
+}
+#server-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--glow);
+}
+#server-select option {
+  background: var(--surface);
+  color: var(--text);
+  padding: 8px;
+}
+
+/* ============================================
    FLOATING ADDRESS BAR
    ============================================ */
 #addr-bar {

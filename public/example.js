@@ -3,8 +3,34 @@ const STORE_KEY = "operationbrowser.aetherui.v2";
 const HOME_URL = "https://search.brave.com/";
 const SEARCH_URL = "https://search.brave.com/search?q=%s";
 
-const wispUrl = (location.protocol === "https:" ? "wss" : "ws") + "://" + location.host + "/wisp/";
-const bareUrl = (location.protocol === "https:" ? "https" : "http") + "://" + location.host + "/bare/";
+// Configuration des serveurs disponibles
+const SERVERS = {
+  auto: { name: "🌐 Auto (Local)", wisp: null, bare: null }, // Utilise location.host
+  fr: { name: "🇫🇷 France", wisp: "wss://fr.aethernet.workers.dev/wisp/", bare: "https://fr.aethernet.workers.dev/bare/" },
+  de: { name: "🇩🇪 Allemagne", wisp: "wss://de.aethernet.workers.dev/wisp/", bare: "https://de.aethernet.workers.dev/bare/" },
+  us: { name: "🇺🇸 USA", wisp: "wss://us.aethernet.workers.dev/wisp/", bare: "https://us.aethernet.workers.dev/bare/" },
+  uk: { name: "🇬🇧 UK", wisp: "wss://uk.aethernet.workers.dev/wisp/", bare: "https://uk.aethernet.workers.dev/bare/" },
+  nl: { name: "🇳🇱 Pays-Bas", wisp: "wss://nl.aethernet.workers.dev/wisp/", bare: "https://nl.aethernet.workers.dev/bare/" },
+};
+
+// Récupère le serveur sélectionné
+function getCurrentServer() {
+  const saved = localStorage.getItem('selectedServer') || 'auto';
+  return SERVERS[saved] || SERVERS.auto;
+}
+
+// Construit les URLs Wisp/Bare selon le serveur sélectionné
+function getWispUrl() {
+  const server = getCurrentServer();
+  if (server.wisp) return server.wisp;
+  return (location.protocol === "https:" ? "wss" : "ws") + "://" + location.host + "/wisp/";
+}
+
+function getBareUrl() {
+  const server = getCurrentServer();
+  if (server.bare) return server.bare;
+  return (location.protocol === "https:" ? "https" : "http") + "://" + location.host + "/bare/";
+}
 
 // Support navigateurs sans SharedWorker (WebView Android, iOS Safari)
 let connection = null;
@@ -46,6 +72,7 @@ const els = {
   ntHist: document.getElementById("nt-hist"),
   ntFavGrid: document.getElementById("nt-fav-grid"),
   ntAddFav: document.getElementById("nt-add-fav"),
+  serverSelect: document.getElementById("server-select"),
   menuOverlay: document.getElementById("menu-overlay"),
   menuClose: document.getElementById("menu-close"),
   menuReload: document.getElementById("menu-reload"),
@@ -216,6 +243,8 @@ function pushGlobalHistory(url, title) {
 
 async function setTransport(mode) {
   if (!connection) return;
+  const bareUrl = getBareUrl();
+  const wispUrl = getWispUrl();
   if (mode === "bare") return connection.setTransport("/baremod/index.mjs", [bareUrl]);
   return connection.setTransport("/epoxy/index.mjs", [{ wisp: wispUrl }]);
 }
@@ -780,6 +809,25 @@ els.ntFavGrid?.addEventListener("click", (e) => {
 
 // Add favorite button on new tab page
 els.ntAddFav?.addEventListener("click", addFavoriteFromCurrent);
+
+// Server selector
+els.serverSelect?.addEventListener("change", (e) => {
+  const selected = e.target.value;
+  localStorage.setItem('selectedServer', selected);
+  console.log('Server changed to:', selected, SERVERS[selected]?.name);
+  // Reconnect with new server
+  if (connection) {
+    connection.setTransport("/epoxy/index.mjs", [{ wisp: getWispUrl() }]).catch(console.error);
+  }
+  alert('Serveur changé vers: ' + (SERVERS[selected]?.name || selected) + '\nRechargez la page pour appliquer.');
+});
+
+// Set initial value
+if (els.serverSelect) {
+  const saved = localStorage.getItem('selectedServer') || 'auto';
+  els.serverSelect.value = saved;
+}
+
 els.panelTabs.forEach((el) => el.addEventListener("click", () => switchPanel(el.dataset.p)));
 els.panelBody.addEventListener("click", (e) => {
   const nav = e.target.closest("[data-nav]");
