@@ -23,20 +23,20 @@ function getCurrentServer() {
 function getWispUrl() {
   const server = getCurrentServer();
   if (server.wisp) return server.wisp;
-  return (location.protocol === "https:" ? "wss" : "ws") + "://" + location.host + "/wisp/";
+  return (location.protocol === "https:" ? "wss" : "ws") + "://" + location.host + "/ws/stream/";  // masqué: /ws/stream/ au lieu de /wisp/
 }
 
 function getBareUrl() {
   const server = getCurrentServer();
   if (server.bare) return server.bare;
-  return (location.protocol === "https:" ? "https" : "http") + "://" + location.host + "/bare/";
+  return (location.protocol === "https:" ? "https" : "http") + "://" + location.host + "/api/v1/";  // masqué: /api/v1/ au lieu de /bare/
 }
 
 // Support navigateurs sans SharedWorker (WebView Android, iOS Safari)
 let connection = null;
 try {
   if (typeof SharedWorker !== 'undefined' && typeof BareMux !== 'undefined') {
-    connection = new BareMux.BareMuxConnection("/baremux/worker.js");
+    connection = new BareMux.BareMuxConnection("/workers/worker.js");  // masqué: /workers/ au lieu de /baremux/
     console.log('BareMux loaded');
   } else {
     console.warn('SharedWorker or BareMux not available');
@@ -245,8 +245,8 @@ async function setTransport(mode) {
   if (!connection) return;
   const bareUrl = getBareUrl();
   const wispUrl = getWispUrl();
-  if (mode === "bare") return connection.setTransport("/baremod/index.mjs", [bareUrl]);
-  return connection.setTransport("/epoxy/index.mjs", [{ wisp: wispUrl }]);
+  if (mode === "bare") return connection.setTransport("/modules/index.mjs", [bareUrl]);  // masqué: /modules/
+  return connection.setTransport("/transport/index.mjs", [{ wisp: wispUrl }]);  // masqué: /transport/
 }
 async function ensureTransport(mode) {
   if (!connection) return;
@@ -817,7 +817,7 @@ els.serverSelect?.addEventListener("change", (e) => {
   console.log('Server changed to:', selected, SERVERS[selected]?.name);
   // Reconnect with new server
   if (connection) {
-    connection.setTransport("/epoxy/index.mjs", [{ wisp: getWispUrl() }]).catch(console.error);
+    connection.setTransport("/transport/index.mjs", [{ wisp: getWispUrl() }]).catch(console.error);  // masqué: /transport/
   }
   alert('Serveur changé vers: ' + (SERVERS[selected]?.name || selected) + '\nRechargez la page pour appliquer.');
 });

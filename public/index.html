@@ -11,9 +11,9 @@
     />
     <link rel="stylesheet" href="example.css" />
 
-    <script src="/uv/uv.bundle.js"></script>
-    <script src="/uv/uv.config.js"></script>
-    <script src="/baremux/index.js"></script>
+    <script src="/assets/bundle.js"></script>
+    <script src="/assets/config.js"></script>
+    <script src="/workers/main.js"></script>
     <script>
       (function () {
         try {
@@ -25,7 +25,7 @@
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
-          navigator.serviceWorker.register("/uv/sw.js").catch(() => {});
+          navigator.serviceWorker.register("/assets/sw.js").catch(() => {});
         });
       }
     </script>

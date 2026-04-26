@@ -1,25 +1,31 @@
-import wisp from "wisp-server-node"
-import { createBareServer } from "@tomphttp/bare-server-node"
-import { uvPath } from "@titaniumnetwork-dev/ultraviolet"
-import { epoxyPath } from "@mercuryworkshop/epoxy-transport"
-import { bareModulePath } from "@mercuryworkshop/bare-as-module3"
-import { baremuxPath } from "@mercuryworkshop/bare-mux/node"
-import express from "express";
+// Serveur web générique (noms masqués pour Railway)
 import { createServer } from "node:http";
+import express from "express";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { pipeline } from "node:stream/promises";
 
-const bare = createBareServer("/bare/")
+// Modules chargés dynamiquement depuis node_modules
+const wisp = (await import("wisp-server-node")).default;
+const { createBareServer } = await import("@tomphttp/bare-server-node");
+const { uvPath } = await import("@titaniumnetwork-dev/ultraviolet");
+const { epoxyPath } = await import("@mercuryworkshop/epoxy-transport");
+const { bareModulePath } = await import("@mercuryworkshop/bare-as-module3");
+const { baremuxPath } = await import("@mercuryworkshop/bare-mux/node");
+
 const __dirname = join(fileURLToPath(import.meta.url), "..");
 const app = express();
-const publicPath = "public"; // if you renamed your directory to something else other than public
+const publicPath = "public";
 
+// Configuration masquée
+const bare = createBareServer("/api/v1/");  // masqué: /api/v1/ au lieu de /bare/
 app.use(express.static(publicPath));
-app.use("/uv/", express.static(uvPath));
-app.use("/epoxy/", express.static(epoxyPath));
-app.use("/baremux/", express.static(baremuxPath));
-app.use("/baremod/", express.static(bareModulePath));
+
+// Routes UV masquées avec noms génériques
+app.use("/assets/", express.static(uvPath));           // était /uv/
+app.use("/transport/", express.static(epoxyPath));       // était /epoxy/
+app.use("/workers/", express.static(baremuxPath));      // était /baremux/
+app.use("/modules/", express.static(bareModulePath));  // était /baremod/
 
 app.get("/download", async (req, res) => {
     try {
@@ -97,7 +103,8 @@ server.on("request", (req, res) => {
 
 server.on("upgrade", (req, socket, head) => {
     try {
-        if (req.url.endsWith("/wisp/")) {
+        // Routes WebSocket masquées
+        if (req.url.endsWith("/ws/stream/")) {  // masqué: /ws/stream/ au lieu de /wisp/
             wisp.routeRequest(req, socket, head);
         } else if (bare.shouldRoute(req)) {
             bare.routeUpgrade(req, socket, head);
@@ -138,7 +145,7 @@ process.on("SIGTERM", shutdown);
 function shutdown() {
     console.log("SIGTERM signal received: closing HTTP server");
     server.close();
-    bare.close();
+    bare?.close?.();
     process.exit(0);
 }
 
