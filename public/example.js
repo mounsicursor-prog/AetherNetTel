@@ -321,12 +321,24 @@ function showNewTab() {
   setLoadBar(100);
   renderNewTab();
 }
+let loadTimeout = null;
+
 async function loadFrameUrl(url, mode) {
   if (!url || url === "about:newtab") return showNewTab();
   els.newtab.style.display = "none";
   els.frame.style.display = "block";
   setStatus("Chargement…", "y", true);
   setLoadBar(15);
+  
+  // Clear any existing timeout
+  if (loadTimeout) clearTimeout(loadTimeout);
+  
+  // Set a timeout to detect slow/blocked loads
+  loadTimeout = setTimeout(() => {
+    setStatus("Chargement lent...", "y");
+    console.warn("Page load timeout - possible iframe blocking");
+  }, 8000);
+  
   // Fallback: pas de proxy UV ou pas de SharedWorker = chargement direct
   if (!window.__uv$config || !connection) {
     els.stProxy.style.display = "none";
