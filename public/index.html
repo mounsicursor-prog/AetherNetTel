@@ -31,6 +31,18 @@
     </script>
   </head>
   <body>
+    <script>
+      // Capture des erreurs avant tout
+      window.__errors = [];
+      window.addEventListener('error', function(e) {
+        window.__errors.push({msg: e.message, file: e.filename, line: e.lineno});
+        alert('JS Error: ' + e.message + ' at ' + e.filename + ':' + e.lineno);
+      });
+      window.addEventListener('unhandledrejection', function(e) {
+        window.__errors.push({msg: e.reason, type: 'promise'});
+        alert('Promise Error: ' + e.reason);
+      });
+    </script>
     <!-- Main Content -->
     <div id="content">
       <div id="frame-wrap">
