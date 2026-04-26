@@ -75,6 +75,11 @@ app.get("/download", async (req, res) => {
     }
 });
 
+// Health check pour Bonto
+app.get("/health", (req, res) => {
+    res.status(200).send("OK");
+});
+
 app.use((req, res) => {
     res.status(404);
     res.sendFile(join(__dirname, publicPath, "404.html")); // change to your 404 page
@@ -91,18 +96,28 @@ server.on("request", (req, res) => {
 });
 
 server.on("upgrade", (req, socket, head) => {
-    if (req.url.endsWith("/wisp/")) {
-        wisp.routeRequest(req, socket, head);
-    } else if (bare.shouldRoute(req)) {
-        bare.routeUpgrade(req, socket, head);
-    } else {
+    try {
+        if (req.url.endsWith("/wisp/")) {
+            wisp.routeRequest(req, socket, head);
+        } else if (bare.shouldRoute(req)) {
+            bare.routeUpgrade(req, socket, head);
+        } else {
+            socket.end();
+        }
+    } catch (err) {
+        console.error("WebSocket error:", err.message);
         socket.end();
     }
 });
 
+// Error handling
+server.on("error", (err) => {
+    console.error("Server error:", err.message);
+});
+
 let port = parseInt(process.env.PORT || "");
 
-if (isNaN(port)) port = 8080; // set your port
+if (isNaN(port)) port = 3000; // Bonto default port
 const initialPort = port;
 const autoPort = process.env.AUTO_PORT === "1" || process.env.AUTO_PORT === "true";
 
